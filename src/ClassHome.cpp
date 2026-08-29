@@ -80,6 +80,7 @@ void Home::render(){
                 if(ImGui::Button("Resume",ImVec2(200,70))){
                     DocumentView*d = OmniBook::screens[2];
                     d->loadDocument(OmniBook::lb.path.c_str(),OmniBook::lb.page);
+                    FileManagerUtils::selected_path_file = OmniBook::lb.path;
                     OmniBook::currentScreen = SCREEN::DOCVIEW;
                 }
 

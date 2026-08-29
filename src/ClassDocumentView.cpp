@@ -341,8 +341,9 @@ void DocumentView::displayTopBottomBar(){
 
         ImGui::Begin("BottomBar",NULL,ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove);
 
-        ImGui::SetCursorPos(ImVec2((W_SCREEN-100)/2,12));
-        ImGui::Text("%i/%i",this->currPage,this->doc->getTotalPages());
+        const char*text = fmt::format("{}/{}",this->currPage,this->doc->getTotalPages()).c_str();
+        ImGui::SetCursorPos(ImVec2((W_SCREEN-100 - ImGui::CalcTextSize(text).x)/2,12));
+        ImGui::Text(text);
         ImVec2 c = ImGui::GetCursorPos();
         c = ImVec2(20+c.x,10+c.y);
         ImGui::SetCursorPos(c);

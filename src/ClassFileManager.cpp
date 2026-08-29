@@ -66,10 +66,6 @@ void FileManager::render(){
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    ImGuiStyle& style = ImGui::GetStyle();
-    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1f,0.1f,0.1f,1.f);
-    style.Colors[ImGuiCol_Text] = ImVec4(1.f,1.f,1.f,1.f);
-
     ImGui::SetNextWindowPos(ImVec2(W_SCREEN/2, H_SCREEN/2),ImGuiCond_Always,ImVec2(0.5f,0.5f));
     ImGui::SetNextWindowSize(ImVec2(W_SCREEN,H_SCREEN));
 
