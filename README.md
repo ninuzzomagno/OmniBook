@@ -1,3 +1,5 @@
+
+
 # OmniBook
 ## A book reader app for PSVITA with traslation support
 
@@ -31,7 +33,11 @@ For now **NO ZOOM OR ROTATION SUPPORT**.
 ![File manager](media/filemanager.jpg)
 
 
-https://github.com/user-attachments/assets/86692314-593a-464f-92eb-2166aa68e71a
+
+
+https://github.com/user-attachments/assets/390ee1e3-64b5-4d27-8f2b-8b95d7574576
+
+
 
 
 # Credits:
