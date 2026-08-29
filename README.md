@@ -25,8 +25,12 @@ For now **NO ZOOM OR ROTATION SUPPORT**.
 - **R**: to load next page
 - **front touch**: to use widget and scrolling pages like a smartphone
 
-### Screenshots 
-![Home screen](screenshot/home.png)
+# MEDIA 
+![Home screen](media/home.jpg)
+![Home screen with night mode ON](media/home_night_mode.jpg)
+![File manager](media/filemanager.jpg)
+
+<video src=
 
 # Credits:
 - [MuPDF](https://mupdf.com/)
