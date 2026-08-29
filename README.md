@@ -30,7 +30,8 @@ For now **NO ZOOM OR ROTATION SUPPORT**.
 ![Home screen with night mode ON](media/home_night_mode.jpg)
 ![File manager](media/filemanager.jpg)
 
-<video src=
+<video>
+<source src="https://github.com/ninuzzomagno/OmniBook/media/traslation.mp4" type="video/mp4"/>
 
 # Credits:
 - [MuPDF](https://mupdf.com/)
