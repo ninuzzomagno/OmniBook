@@ -1,3 +1,5 @@
+
+
 # OmniBook
 ## A book reader app for PSVITA with traslation support
 
@@ -30,8 +32,7 @@ For now **NO ZOOM OR ROTATION SUPPORT**.
 ![Home screen with night mode ON](media/home_night_mode.jpg)
 ![File manager](media/filemanager.jpg)
 
-<video>
-  <source src="https://github.com/ninuzzomagno/OmniBook/media/traslation.mp4" type="video/mp4"/>
+<video src="media/traslation.mp4" type="video/mp4">
 </video>
 
 # Credits:
