@@ -13,5 +13,15 @@ If you want to build this app from source code, you need to extract the libmupdf
 
 ### Features
 The **traslation support** is acheived through *SceHttp* and *Google traslate*. You can traslate a single word or the whole page. Supported languages are: Italian, English, Spanish, French and German.
-Everything in this app works with front touch.
-There is a **night mode**
+Everything in this app works by front touch.
+There is a **night mode** and an **automatic save** of your reading progress.
+For now **NO ZOOM OR ROTATION SUPPORT**.
+
+### Controls
+- **X**: to toogle night mode. You can do that in the home and while you are reading
+- **SELECT**: to show a useful UI while you are reading
+- **L**: to load previous page
+- **R**: to load next page
+- **front touch**: to use widget and scrolling pages like a smartphone
+
+### Screenshots 
