@@ -31,7 +31,8 @@ For now **NO ZOOM OR ROTATION SUPPORT**.
 ![File manager](media/filemanager.jpg)
 
 <video>
-<source src="https://github.com/ninuzzomagno/OmniBook/media/traslation.mp4" type="video/mp4"/>
+  <source src="https://github.com/ninuzzomagno/OmniBook/media/traslation.mp4" type="video/mp4"/>
+</video>
 
 # Credits:
 - [MuPDF](https://mupdf.com/)
