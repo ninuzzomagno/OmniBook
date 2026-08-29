@@ -7,6 +7,7 @@ OmniBook is an app for PSVITA written in C++. It uses the main following librari
 - **SDL2**: for graphics and input
 - **ImGui**: for widgets and windows
 - **fmt**: for *std::format* support
+- **nlohmann/json**: for json support
 
 ### Building
 If you want to build this app from source code, you need to extract the libmupdf.a from its tz archive. 
@@ -26,3 +27,11 @@ For now **NO ZOOM OR ROTATION SUPPORT**.
 
 ### Screenshots 
 ![Home screen](screenshot/home.png)
+
+# Credits:
+- [MuPDF](https://mupdf.com/)
+- [upstream imgui](https://github.com/ocornut/imgui)
+- [SDL2](https://github.com/libsdl-org/SDL)
+- [vitasdk](https://github.com/vitasdk)
+- [fmt](https://github.com/fmtlib/fmt)
+- [nlohmann/json](https://github.com/nlohmann/json)
