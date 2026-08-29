@@ -14,7 +14,7 @@ include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "OmniBook")
 set(VITA_TITLEID "OMBK00001") # TitleID a 9 caratteri
-set(VITA_VERSION "01.00")
+set(VITA_VERSION "01.01")
 
 add_definitions(-DFMT_HEADER_ONLY)
 add_definitions(-DAPP_VERSION="${VITA_VERSION}")

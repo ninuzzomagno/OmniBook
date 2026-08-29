@@ -2,7 +2,7 @@
 
 <livearea style="psmobile" format-ver="01.00" content-rev="1">
 
-	<update_info url="http://github.com/ninuzzomagno/OmniBook_dist/update.xml"/>
+	<update_info url="https://github.com/ninuzzomagno/OmniBook/update.xml"/>
 
 	<livearea-background>
 		<image>bg.png</image>
@@ -31,7 +31,7 @@
 	<frame id="frame4">
 		<liveitem>
 			<text align="left" text-align="left" word-wrap="off" ellipsis="on">
-				<str size="18" color="#000000" shadow="on">v1.00</str>
+				<str size="18" color="#000000" shadow="on">v1.01</str>
 			</text>
 		</liveitem>
 	</frame>
