@@ -2,7 +2,7 @@
 ## A book reader app for PSVITA with traslation support
 
 ### Introduction
-OmniBook is an app for PSVITA written in C++. It uses the main following library:
+OmniBook is an app for PSVITA written in C++. It uses the main following libraries:
 - **MuPDF**: so it can read PDF, EPUB, MOBI, CBZ, CBR e XPS
 - **SDL2**: for graphics and input
 - **ImGui**: for widgets and windows
@@ -25,3 +25,4 @@ For now **NO ZOOM OR ROTATION SUPPORT**.
 - **front touch**: to use widget and scrolling pages like a smartphone
 
 ### Screenshots 
+![Home screen](screenshot/home.png)
