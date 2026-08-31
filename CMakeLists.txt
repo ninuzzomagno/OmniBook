@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
 
-# Assicurati che il toolchain file sia caricato correttamente
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     if(DEFINED ENV{VITASDK})
         set(CMAKE_TOOLCHAIN_FILE "$ENV{VITASDK}/share/vita.toolchain.cmake" CACHE PATH "toolchain file")
@@ -21,7 +20,6 @@ add_definitions(-DAPP_VERSION="${VITA_VERSION}")
 add_definitions(-DIMGUI_ENABLE_FREETYPE) 
 add_definitions(-DIMGUI_DISABLE_DEFAULT_SHELL_FUNCTIONS)
 
-# DISATTIVAZIONE LTO E FLAG DI COMPILAZIONE (Importante -fpermissive per GCC 15)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-lto")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-lto")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-lto")
@@ -50,10 +48,9 @@ add_executable(${PROJECT_NAME}
     libs/imgui/imgui_tables.cpp
     libs/imgui/imgui_widgets.cpp
     libs/imgui/misc/freetype/imgui_freetype.cpp
-    
-    # ImGui Backends (Ponte SDL2 + vitaGL)
+
     libs/imgui/backends/imgui_impl_sdl2.cpp
-    libs/imgui/backends/imgui_impl_sdlrenderer2.cpp   # <--- Usa questo al posto di opengl2
+    libs/imgui/backends/imgui_impl_sdlrenderer2.cpp
 
     # Sorgenti Progetto
     src/main.cpp
@@ -68,7 +65,7 @@ add_executable(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     SDL2_image
-    webpdemux    # <--- AGGIUNGI QUESTO
+    webpdemux 
     webp
     SDL2
     mupdf
@@ -80,11 +77,10 @@ target_link_libraries(${PROJECT_NAME}
     z
     m
     
-    # MODULI DI SISTEMA VITA (STUBS) - Questi risolvono gli ultimi errori
-    SceAppUtil_stub      # Risolve sceAppUtilInit e Browser
-    SceAudioIn_stub      # Risolve sceAudioInInput
-    SceMotion_stub       # Risolve sceMotionGetSensorState
-    ScePower_stub        # Spesso richiesto da SDL2
+    SceAppUtil_stub      
+    SceAudioIn_stub   
+    SceMotion_stub       
+    ScePower_stub        
     SceTouch_stub
     SceGxm_stub
     SceDisplay_stub
