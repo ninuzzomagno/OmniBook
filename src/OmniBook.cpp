@@ -53,7 +53,7 @@ void OmniBook::updateTheme(){
     style.WindowPadding     = ImVec2(20, 20);
     style.FramePadding      = ImVec2(20, 15); // Bottoni alti e comodi per il touch
     style.ItemSpacing       = ImVec2(10, 15);
-    style.WindowBorderSize  = 0.0f; // Rimuoviamo i bordi per un look "Flat"
+    style.WindowBorderSize  = 0.0f;
     style.ChildBorderSize   = 0.0f;
 
     if(OmniBook::NightModeON){
