@@ -74,7 +74,7 @@ void FileManager::render(){
     ImGui::Begin("Libreria");
 
     for (const auto& item : FileManagerUtils::items) {
-        // Prepariamo l'etichetta con un'icona testuale
+        // Preparo l'etichetta con un'icona testuale
         std::string icon = item.isDir ? "[DIR] " : "[BOOK] ";
         std::string label = icon + item.name;
 
