@@ -2,6 +2,7 @@
 
 Home::Home() : Screen(){
     this->logo = IMG_LoadTexture(OmniBook::renderer,"app0:/res/texture/logo_home.png");
+    this->about_btn_pressed = false;
 }
 
 void Home::update(){
@@ -12,20 +13,31 @@ void Home::update(){
         ImGuiIO& io = ImGui::GetIO();
 
         if(event.type == SDL_FINGERDOWN || event.type == SDL_FINGERMOTION){
-            float mouse_x = event.tfinger.x * W_SCREEN;
-            float mouse_y = event.tfinger.y * H_SCREEN;
-                
-            io.AddMousePosEvent(mouse_x, mouse_y);
-            io.AddMouseButtonEvent(0, true);
+            if(!this->about_btn_pressed){
+                mouse_x = event.tfinger.x * W_SCREEN;
+                mouse_y = event.tfinger.y * H_SCREEN;
+                    
+                io.AddMousePosEvent(mouse_x, mouse_y);
+                io.AddMouseButtonEvent(0, true);
+            }
         }
         else if (event.type == SDL_FINGERUP){
-            io.AddMouseButtonEvent(0, false);
+            
+
+            if(this->about_btn_pressed)
+                this->about_btn_pressed = false;
+            else
+                io.AddMouseButtonEvent(0, false);
         }
 
         if(event.type == SDL_CONTROLLERBUTTONDOWN){
             if(event.cbutton.button == SDL_CONTROLLER_BUTTON_A){
                 OmniBook::NightModeON = !OmniBook::NightModeON;
                 OmniBook::updateTheme();
+            }
+            else if(event.cbutton.button == SDL_CONTROLLER_BUTTON_B){
+                if(this->about_btn_pressed)
+                    this->about_btn_pressed = false;
             }
         }
     }
@@ -54,7 +66,7 @@ void Home::render(){
             }
             ImGui::SetCursorPosY(390);
             if(ImGui::Button("About",ImVec2(250,60))){
-
+                this->about_btn_pressed = true;
             }
         ImGui::EndGroup();
 
@@ -71,7 +83,7 @@ void Home::render(){
                 ImGui::Text(text1);
 
                 ImGui::SetCursorPosY(80);
-                const char*text2 = fmt::format("Last read: {}",OmniBook::lb.page).c_str();
+                const char*text2 = fmt::format("Last read: {}",OmniBook::lb.page+1).c_str();
                 ImGui::SetCursorPosX((cardWidth-ImGui::CalcTextSize(text2).x)*0.5f);
                 ImGui::TextDisabled(text2);
 
@@ -87,6 +99,17 @@ void Home::render(){
             ImGui::EndChild();
             ImGui::PopStyleColor();
 
+        }
+
+        if(this->about_btn_pressed){
+            ImGui::SetCursorPos(ImVec2(W_SCREEN*0.2,H_SCREEN*0.5-100));
+            ImGui::PushStyleColor(ImGuiCol_ChildBg,ImVec4(0.20f, 0.20f, 0.22f, 1.00f));
+            ImGui::BeginChild("#About",ImVec2(W_SCREEN*0.6,200));
+            ImGui::SetNextItemWidth(W_SCREEN*0.5);
+            ImGui::SetCursorPos(ImVec2(45,15));
+            ImGui::TextWrapped("Omnibook was created by ninuzzomagno.\n\nGithub: https://github.com/ninuzzomagno/\n\nv1.90");
+            ImGui::EndChild();
+            ImGui::PopStyleColor();
         }
     
     ImGui::End();

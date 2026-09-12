@@ -2,77 +2,19 @@
 
 using json = nlohmann::json;
 
-std::string url_encode(const std::string &value) {
-    std::ostringstream escaped;
-    escaped.fill('0');
-    escaped << std::hex;
-
-    for (char c : value) {
-        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
-            escaped << c;
-        } else {
-            escaped << '%' << std::setw(2) << int((unsigned char)c);
-        }
-    }
-    return escaped.str();
-}
-
-Document::~Document(){
-	if (this->pix) fz_drop_pixmap(this->ctx, this->pix);
-    if (this->stext_page) fz_drop_stext_page(this->ctx, this->stext_page);
-    if (this->doc) fz_drop_document(this->ctx, this->doc);
-    if (this->ctx) fz_drop_context(this->ctx);
-    if (this->texture) SDL_DestroyTexture(this->texture);
-
-	this->pix = nullptr;
-	this->stext_page = nullptr;
-	this->doc = nullptr;
-	this->ctx = nullptr;
-	this->texture = nullptr;
-}
-
-void Document::reload(){
-
-    LoadingScreen ls(3);
-
-    if (this->pix) fz_drop_pixmap(this->ctx, this->pix);
-    if (this->stext_page) fz_drop_stext_page(this->ctx, this->stext_page);
-    if (this->doc) fz_drop_document(this->ctx, this->doc);
-	
-    ls.update();
-    ls.render();
-
-    this->pix = nullptr;
-	this->stext_page = nullptr;
-	this->doc = nullptr;
-
-    fz_try(this->ctx)
-		this->doc = fz_open_document(this->ctx, FileManagerUtils::selected_path_file.c_str());
-	fz_catch(this->ctx) {
-		fz_report_error(this->ctx);
-		fz_drop_context(this->ctx);
-		debug_color(OmniBook::renderer,255,0,255);
-		return;
-	}
-
-    ls.update();
-    ls.render();
-
-    this->loadPage(this->current_page);
-
-    ls.update();
-    ls.render();
-}
-
 Document::Document(const char*path){
 
 	LoadingScreen loading(7);
 
+    this->zoommed = false;
+
     this->current_page = 1;
 	this->num_pages = -1;
-	this->zoom = 100.f;
-	this->rotate = 0.f;
-	this->scrollY = 0;
+    this->def_zoom = 0.f;
+	this->zoom = 0.f;
+	this->rotation = 0.f;
+	this->scroll_Y = 0;
+    this->scroll_X = 0;
 	this->valid = false;
 
 	this->pix = nullptr;
@@ -148,18 +90,84 @@ Document::Document(const char*path){
 	loading.render();
 }
 
+Document::~Document(){
+	if (this->pix) fz_drop_pixmap(this->ctx, this->pix);
+    if (this->stext_page) fz_drop_stext_page(this->ctx, this->stext_page);
+    if (this->doc) fz_drop_document(this->ctx, this->doc);
+    if (this->ctx) fz_drop_context(this->ctx);
+    if (this->texture) SDL_DestroyTexture(this->texture);
+
+	this->pix = nullptr;
+	this->stext_page = nullptr;
+	this->doc = nullptr;
+	this->ctx = nullptr;
+	this->texture = nullptr;
+}
+
+void Document::rotate(){
+    this->rotation == 360.f ? this->rotation = 90.f : this->rotation+=90.f;
+    this->loadPage(this->current_page);
+}
+
+void Document::applyZoom(float z){
+    this->zoom *= z;
+    this->zoommed=true;
+    this->loadPage(this->current_page);
+}
+
+void Document::reload(){
+
+    LoadingScreen ls(3);
+
+    if (this->pix) fz_drop_pixmap(this->ctx, this->pix);
+    if (this->stext_page) fz_drop_stext_page(this->ctx, this->stext_page);
+    if (this->doc) fz_drop_document(this->ctx, this->doc);
+	
+    ls.update();
+    ls.render();
+
+    this->pix = nullptr;
+	this->stext_page = nullptr;
+	this->doc = nullptr;
+
+    fz_try(this->ctx)
+		this->doc = fz_open_document(this->ctx, FileManagerUtils::selected_path_file.c_str());
+	fz_catch(this->ctx) {
+		fz_report_error(this->ctx);
+		fz_drop_context(this->ctx);
+		debug_color(OmniBook::renderer,255,0,255);
+		return;
+	}
+
+    ls.update();
+    ls.render();
+
+    this->loadPage(this->current_page);
+
+    ls.update();
+    ls.render();
+}
+
+
+void Document::updateTexture(){
+    if(this->w < W_SCREEN) this->scroll_X = 0;
+    if(this->h < H_SCREEN) this->scroll_Y = 0;
+    unsigned char* sourcePtr = this->pix->samples + (int(this->scroll_Y) * this->pix->stride) + (int(this->scroll_X)*3);
+    SDL_UpdateTexture(this->texture, NULL, sourcePtr, this->pix->stride);
+}
+
 void Document::nightToogle() {
 	OmniBook::NightModeON = !OmniBook::NightModeON;
 
 	fz_invert_pixmap(this->ctx, this->pix);
 
-    unsigned char* sourcePtr = this->pix->samples + (int(this->scrollY) * this->pix->stride);
-    SDL_UpdateTexture(this->texture, NULL, sourcePtr, this->pix->stride);
+    this->updateTexture();
 }
 
 int Document::loadNextPage() {
 	if (this->current_page < this->num_pages){
-		this->scrollY = 0;
+		this->scroll_Y = 0;
+        this->scroll_X = 0;
 		this->loadPage(this->current_page + 1);
 	}
 	return this->current_page+1;
@@ -167,7 +175,8 @@ int Document::loadNextPage() {
 
 int Document::loadPreviousPage() {
 	if (this->current_page > 0){
-		this->scrollY = 0;
+		this->scroll_Y = 0;
+        this->scroll_X = 0;
 		this->loadPage(this->current_page - 1);
 	}
 	return this->current_page+1;
@@ -179,19 +188,20 @@ int Document::loadPage(int page) {
 	else if (page == this->num_pages)
 		page = this->num_pages-1;
 
-	if(this->pix)
-		fz_drop_pixmap(this->ctx, this->pix);
-	if (this->stext_page)
-		fz_drop_stext_page(this->ctx, this->stext_page);
+	if(this->pix) fz_drop_pixmap(this->ctx, this->pix);
+	if (this->stext_page) fz_drop_stext_page(this->ctx, this->stext_page);
 
 	fz_page* page_ptr = fz_load_page(this->ctx, this->doc, page);
 	fz_rect rect = fz_bound_page(this->ctx, page_ptr);
 
 	float pageWidthPoints = rect.x1 - rect.x0;
 
-	this->zoom = static_cast<float>(W_SCREEN) / pageWidthPoints * 100.f;
-	this->ctm = fz_scale(this->zoom / 100, this->zoom / 100);
-	this->ctm = fz_pre_rotate(this->ctm, this->rotate);
+	this->def_zoom = float(W_SCREEN) / pageWidthPoints;
+
+    if(this->zoom == 0.f) this->zoom = this->def_zoom;
+
+	this->ctm = fz_scale(this->zoom, this->zoom);
+	this->ctm = fz_pre_rotate(this->ctm, this->rotation);
 
 	fz_stext_options options = { FZ_STEXT_PRESERVE_WHITESPACE };
 	this->stext_page = fz_new_stext_page_from_page(this->ctx, page_ptr, &options);
@@ -211,40 +221,81 @@ int Document::loadPage(int page) {
     this->w = (unsigned int)fz_pixmap_width(this->ctx, this->pix);
 	this->h = (unsigned int)fz_pixmap_height(this->ctx, this->pix);
 
-	if (OmniBook::NightModeON){
-		fz_invert_pixmap(this->ctx, this->pix);
-	}
+	if (OmniBook::NightModeON) fz_invert_pixmap(this->ctx, this->pix);
 
-    unsigned char* sourcePtr = this->pix->samples + (int(this->scrollY) * this->pix->stride);
-    SDL_UpdateTexture(this->texture, NULL, sourcePtr, this->pix->stride);
+    if(this->zoommed){
+
+        if (this->texture) SDL_DestroyTexture(this->texture);
+
+        this->texture = SDL_CreateTexture(OmniBook::renderer, 
+                                        SDL_PIXELFORMAT_RGB24, 
+                                        SDL_TEXTUREACCESS_STREAMING, 
+                                        W_SCREEN > this->w ? this->w : W_SCREEN, H_SCREEN > this->h ? this->h : H_SCREEN);
+
+        this->zoommed = false;
+
+    }
+
+    this->updateTexture();
 
 	return this->current_page+1;
 }
 
-void Document::render(){
-	SDL_Rect rect;
-	rect.x = 0;
-	rect.w = W_SCREEN;
-	rect.y = 0;
-	rect.h = H_SCREEN;
-    SDL_RenderCopy(OmniBook::renderer,this->texture,NULL,&rect);
+void Document::render(bool isPinching, float zM){
+	
+	float w = float(W_SCREEN > this->w ? this->w : W_SCREEN)*(isPinching ? zM : 1.f);
+    float h = float(H_SCREEN > this->h ? this->h : H_SCREEN)*(isPinching ? zM : 1.f);
+
+    SDL_Rect dest;
+    dest.x = (W_SCREEN - w) * 0.5f;
+    dest.y = (H_SCREEN - h) * 0.5f;
+    dest.w = w;
+    dest.h = h;
+    
+    SDL_RenderCopy(OmniBook::renderer,this->texture,NULL,&dest);
 }
 
-void Document::scroll(float delta) {
-	this->scrollY += delta;
+void Document::scroll(float deltaX,float deltaY) {
+	this->scroll_Y += deltaY;
+    this->scroll_X += deltaX;
 	
-	if (this->scrollY < 0) this->scrollY = 0;
-    if (this->scrollY > (this->h - H_SCREEN))
-        this->scrollY = this->h - H_SCREEN;
+	if (this->scroll_Y < 0) this->scroll_Y = 0;
+    if (this->scroll_Y > (this->h - H_SCREEN))
+        this->scroll_Y = this->h - H_SCREEN;
+    if(this->scroll_X<0) this->scroll_X = 0;
+    if(this->scroll_X>(this->w-W_SCREEN))
+        this->scroll_X = this->w-W_SCREEN;
 
-    unsigned char* sourcePtr = this->pix->samples + (int(this->scrollY) * this->pix->stride);
-    SDL_UpdateTexture(this->texture, NULL, sourcePtr, this->pix->stride);
+    this->updateTexture();
+}
+
+size_t WriteCb(void* contents, size_t size, size_t nmemb, std::string* s) {
+	size_t newLength = size * nmemb;
+	s->append((char*)contents, newLength);
+	return newLength;
+}
+
+std::string url_encode(const std::string &value) {
+    std::ostringstream escaped;
+    escaped.fill('0');
+    escaped << std::hex;
+
+    for (char c : value) {
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            escaped << c;
+        } else {
+            escaped << '%' << std::setw(2) << int((unsigned char)c);
+        }
+    }
+    return escaped.str();
 }
 
 std::string Document::findWords(fz_rect&rect) {
 	fz_matrix inv = fz_invert_matrix(this->ctm);
-	rect.y0 += this->scrollY;
-	rect.y1 += this->scrollY;
+    rect.x0 += this->scroll_X;
+    rect.x1 += this->scroll_X;
+	rect.y0 += this->scroll_Y;
+	rect.y1 += this->scroll_Y;
 	rect = fz_transform_rect(rect, inv);
 
 	char* testo = fz_copy_rectangle(this->ctx, this->stext_page, rect, 0);
@@ -263,7 +314,7 @@ std::string Document::findWord(fz_point& mouse, fz_rect& sel) {
 
     fz_matrix inv = fz_invert_matrix(this->ctm);
     
-    fz_point p = { mouse.x, mouse.y + (float)this->scrollY };
+    fz_point p = { mouse.x  + (float)this->scroll_X, mouse.y + (float)this->scroll_Y };
     p = fz_transform_point(p, inv);
     
     fz_stext_block* block;
@@ -287,8 +338,10 @@ std::string Document::findWord(fz_point& mouse, fz_rect& sel) {
                     if (pointInCurrentWord) {
                         // HO TROVATO LA PAROLA!
                         sel = fz_transform_rect(wordRect, this->ctm);
-                        sel.y0 -= this->scrollY;
-                        sel.y1 -= this->scrollY;
+                        sel.x0 -= this->scroll_X;
+                        sel.x1 -= this->scroll_X;
+                        sel.y0 -= this->scroll_Y;
+                        sel.y1 -= this->scroll_Y;
                         return currentWord;
                     }
                 
@@ -316,8 +369,10 @@ std::string Document::findWord(fz_point& mouse, fz_rect& sel) {
             // Gestione caso: la parola è l'ultima della riga
             if (pointInCurrentWord) {
                 sel = fz_transform_rect(wordRect, this->ctm);
-                sel.y0 -= this->scrollY;
-                sel.y1 -= this->scrollY;
+                sel.x0 -= this->scroll_X;
+                sel.x1 -= this->scroll_X;
+                sel.y0 -= this->scroll_Y;
+                sel.y1 -= this->scroll_Y;
                 return currentWord;
             }
         }
@@ -328,7 +383,7 @@ std::string Document::findWord(fz_point& mouse, fz_rect& sel) {
 std::string Document::sendRequestForTraslation(std::string&data,std::string&from,std::string&to){
 	std::string escapedText = url_encode(data);
     
-    std::string url = fmt::format("http://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl={}&tl={}&dt=t&q={}", from, to, escapedText);
+    std::string url = fmt::format("http://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl={}&tl={}&dt=t&dt=bd&q={}", from, to, escapedText);
 
     std::string response = "";
     
@@ -388,14 +443,33 @@ std::string Document::sendRequestForTraslation(std::string&data,std::string&from
             std::string testoTradotto = "";
 
             // Struttura Google: [[["tradotto", "originale", ...]]]
-            if (j.is_array() && j.size() > 0 && j[0].is_array()) {
+            if (j.is_array() && j.size() > 0 &&j[0].is_array()) {
                 for (auto& element : j[0]) {
-                    if (element.is_array() && element[0].is_string()) {
+                    if (element.is_array() && element[0].is_string())
                         testoTradotto += element[0].get<std::string>();
-                    }
                 }
-                return testoTradotto;
             }
+            if(j.size()>1 && j[1].is_array()){
+                testoTradotto+='\n';
+                int n=0;
+                for(auto& categoria : j[1]){
+                    if(n==0){
+                        testoTradotto+="\n";
+                        n++;
+                    }
+                    if(categoria.is_array() && categoria[0].is_string())
+                        testoTradotto+=("["+categoria[0].get<std::string>()+"]: ");
+                    n=0;
+                    for(auto& parola: categoria[1]){
+                        if(n!=0)
+                            testoTradotto+=", ";
+                        n++;
+                        testoTradotto+=parola;
+                    }
+                    n=0;
+                }
+            }
+            return testoTradotto;
         }
         catch (json::parse_error& e) {
             return fmt::format("Errore: Formato non JSON -> {}",response);
@@ -416,8 +490,3 @@ std::string Document::translate(fz_rect& rect, std::string& from, std::string& t
     return this->sendRequestForTraslation(data,from,to);
 }
 
-size_t WriteCb(void* contents, size_t size, size_t nmemb, std::string* s) {
-	size_t newLength = size * nmemb;
-	s->append((char*)contents, newLength);
-	return newLength;
-}

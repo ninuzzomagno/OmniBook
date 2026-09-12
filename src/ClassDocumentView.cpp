@@ -1,8 +1,10 @@
 #include"Gui.h"
 
 DocumentView::DocumentView():Screen(){
+    this->currentZoom = 0;
     this->showUI = false;
     this->doubleTap = false;
+    this->isPinching = false;
     this->showTraslation = false;
     this->showSelection = false;
     this->time_heldDown = 0;
@@ -41,6 +43,9 @@ void DocumentView::loadDocument(const char*path,int my_p = -1){
         this->currPage = this->doc->loadPage(p);
         OmniBook::lb.page = p;
     }
+
+    this->currentZoom = this->doc->getZoom();
+
     this->showUI = false;
     this->doubleTap = false;
     this->showTraslation = false;
@@ -48,7 +53,8 @@ void DocumentView::loadDocument(const char*path,int my_p = -1){
     this->time = 0;
     this->time_traslataion = 0;
 
-    this->scrollBar_rect = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
+    this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
+    this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
 }
 
 void DocumentView::update(){
@@ -84,15 +90,22 @@ void DocumentView::update(){
             if(event.type == SDL_CONTROLLERBUTTONDOWN){
                 switch (event.cbutton.button) {
                     case SDL_CONTROLLER_BUTTON_BACK:
-                            this->showUI = !this->showUI;
+                        this->showUI = !this->showUI;
                         break;
                 }
             }
         }
         else{
-
-            if(event.type == SDL_FINGERDOWN){
-                if(!this->showTraslation){
+            if(event.type == SDL_MULTIGESTURE){
+                this->isPinching = true;
+                this->currentZoom += event.mgesture.dDist * 2.0f;
+                this->showSelection=false;
+                this->showTraslation=false;
+                this->doubleTap = false;
+            }
+            else if(event.type == SDL_FINGERDOWN){
+                if(!this->showTraslation && !this->isPinching){
+                    this->currentZoom = 1.0f; 
 
                     this->time_heldDown = SDL_GetTicks();
                     this->mouse.x = event.tfinger.x*W_SCREEN;
@@ -116,9 +129,9 @@ void DocumentView::update(){
                 }
             }
             else if(event.type == SDL_FINGERMOTION){
-                if(!this->showTraslation){
+                if(!this->showTraslation && !this->isPinching){
                     if(!this->doubleTap)
-                        this->doc->scroll(-event.tfinger.dy*H_SCREEN);
+                        this->doc->scroll(-event.tfinger.dx*W_SCREEN,-event.tfinger.dy*H_SCREEN);
                     else{
                         this->showSelection = true;
                         this->traslation_rect.x1 = event.tfinger.x*W_SCREEN;
@@ -130,7 +143,7 @@ void DocumentView::update(){
                         this->selection_rect.h = this->traslation_rect.y1 - this->traslation_rect.y0;
                     }
                 }
-            }
+            } 
             else if(event.type == SDL_FINGERUP){
                 if(this->showTraslation){
                     this->showSelection = false;
@@ -151,6 +164,16 @@ void DocumentView::update(){
                             this->traslation = "Errore: attendere 2 secondi";
                         }
                     }
+                    else if(this->isPinching){
+                        if(SDL_GetNumTouchFingers(event.tfinger.touchId) < 2){
+                            this->isPinching = false;
+                            this->doc->applyZoom(this->currentZoom);
+                            this->currentZoom = 1.0f;
+                            this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
+                            this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
+                            this->traslation="";
+                        }
+                    }
                     else{
                         if (this->traslation != ""){
                             this->traslation = this->doc->translate(this->traslation,OmniBook::tr.code[OmniBook::tr.idx_from],OmniBook::tr.code[OmniBook::tr.idx_to]);
@@ -165,25 +188,28 @@ void DocumentView::update(){
             if(event.type == SDL_CONTROLLERBUTTONDOWN){
                 switch (event.cbutton.button) {
                     case SDL_CONTROLLER_BUTTON_A:
-                            this->doc->nightToogle();
+                        this->doc->nightToogle();
                         break;
-                    case SDL_CONTROLLER_BUTTON_B: // CIRCLE
-                            this->saveData();
-                            FileManagerUtils::selected_path_file = "";
-                            OmniBook::currentScreen = SCREEN::FILEMANAGER;
-                            delete this->doc;
-                            this->doc = nullptr;
+                    case SDL_CONTROLLER_BUTTON_B:
+                        this->saveData();
+                        FileManagerUtils::selected_path_file = "";
+                        OmniBook::currentScreen = SCREEN::FILEMANAGER;
+                        OmniBook::updateTheme();
+                        delete this->doc;
+                        this->doc = nullptr;
                         break;
                     case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: // L
-                            this->currPage = this->doc->loadPreviousPage();
-                            this->scrollBar_rect = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
+                        this->currPage = this->doc->loadPreviousPage();
+                        this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
+                        this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
                         break;
                     case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER://R
-                            this->currPage = this->doc->loadNextPage();
-                            this->scrollBar_rect = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
+                        this->currPage = this->doc->loadNextPage();
+                        this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
+                        this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
                         break;
-                    case SDL_CONTROLLER_BUTTON_BACK:
-                            this->showUI = !this->showUI;
+                    case SDL_CONTROLLER_BUTTON_BACK: // SELECT
+                        this->showUI = !this->showUI;
                         break;
                 }
             }
@@ -211,7 +237,7 @@ void DocumentView::render(){
     OmniBook::NightModeON ? SDL_SetRenderDrawColor(OmniBook::renderer,0,0,0,255) : SDL_SetRenderDrawColor(OmniBook::renderer,255,255,255,255);
     SDL_RenderClear(OmniBook::renderer);
 
-    this->doc->render();
+    this->doc->render(this->isPinching,this->currentZoom);
     
     this->displayUI();
     
@@ -236,10 +262,17 @@ void DocumentView::displayUI(){
 }
 
 void DocumentView::displayScrollBar(){
-    this->scrollBar_rect.y=this->doc->getScrollY() * float(H_SCREEN) / float(this->doc->getDocH());
+    
     SDL_SetRenderDrawBlendMode(OmniBook::renderer, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(OmniBook::renderer, 100, 100, 100, 100);
-    SDL_RenderFillRect(OmniBook::renderer, &this->scrollBar_rect);
+    if(this->scrollBar_rect_Y.h<544){
+        this->scrollBar_rect_Y.y=this->doc->getScrollY() * float(H_SCREEN) / float(this->doc->getDocH());
+        SDL_RenderFillRect(OmniBook::renderer, &this->scrollBar_rect_Y);
+    }
+    if(this->scrollBar_rect_X.w<960){
+        this->scrollBar_rect_X.x=this->doc->getScrollX() * float(W_SCREEN) / float(this->doc->getDocW());
+        SDL_RenderFillRect(OmniBook::renderer, &this->scrollBar_rect_X);
+    }
 }
 
 void DocumentView::displaySelection(){
@@ -284,21 +317,19 @@ void DocumentView::displayTraslation(){
 void DocumentView::displayTopBottomBar(){
     if(this->showUI){
 
-        SDL_Rect top = {0,0,W_SCREEN,40};
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.FontSizeBase = 16.0f;
 
-        OmniBook::NightModeON ? SDL_SetRenderDrawColor(OmniBook::renderer, 25, 25, 25, 255) : SDL_SetRenderDrawColor(OmniBook::renderer, 230, 230, 230, 255);
-        SDL_RenderFillRect(OmniBook::renderer, &top);
+        style.WindowRounding    = 0.0f;
 
-        top.x = 10;
-        top.y = 8;
-        top.w = 24;
-        top.h = 24;
-
-        OmniBook::NightModeON ? SDL_SetTextureColorMod(this->wifi_texture,255,255,255) : SDL_SetTextureColorMod(this->wifi_texture,0,0,0);
-        SDL_RenderCopy(OmniBook::renderer,this->wifi_texture,NULL,&top);
-
-        top.x = 936;
-        top.w = 14;
+        if(OmniBook::NightModeON){
+            style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1f,0.1f,0.1f,1.f);
+            style.Colors[ImGuiCol_Text] = ImVec4(1.f,1.f,1.f,1.f);
+        }
+        else{
+            style.Colors[ImGuiCol_WindowBg] = ImVec4(0.9f,0.9f,0.9f,1.f);
+            style.Colors[ImGuiCol_Text] = ImVec4(0.f,0.f,0.f,1.f);
+        }
 
         SDL_Rect source;
         source.y = 0;
@@ -318,24 +349,39 @@ void DocumentView::displayTopBottomBar(){
         else if(perc>=80 && perc<=100)
             source.x = 56;
 
-        OmniBook::NightModeON ? SDL_SetTextureColorMod(this->battery_texture,255,255,255) : SDL_SetTextureColorMod(this->battery_texture,0,0,0);
-        SDL_RenderCopy(OmniBook::renderer,this->battery_texture,&source,&top);
+        ImGui::SetNextWindowPos(ImVec2(W_SCREEN/2, 20),ImGuiCond_Always,ImVec2(0.5f,0.5f));
+        ImGui::SetNextWindowSize(ImVec2(W_SCREEN,40));
 
-        ImGuiStyle& style = ImGui::GetStyle();
-        style.FontSizeBase = 16.0f;
-        if(OmniBook::NightModeON){
-            style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1f,0.1f,0.1f,1.f);
-            style.Colors[ImGuiCol_Text] = ImVec4(1.f,1.f,1.f,1.f);
-            // style.Colors[ImGuiCol_Header] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
-            // style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
-        }
-        else{
-            style.Colors[ImGuiCol_WindowBg] = ImVec4(0.9f,0.9f,0.9f,1.f);
-            style.Colors[ImGuiCol_Text] = ImVec4(0.f,0.f,0.f,1.f);
-            // style.Colors[ImGuiCol_Header] = ImVec4(0.2f, 0.6f, 1.0f, 0.5f);
-            // style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.2f, 0.6f, 1.0f, 0.8f);
-        }
+        ImGui::Begin("##TopBar",NULL,ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove);
         
+        const ImVec4 iconColor = OmniBook::NightModeON ? ImVec4(1.f,1.f,1.f,1.f) : ImVec4(0.f,0.f,0.f,1.f);
+        ImGui::SetCursorPos(ImVec2(10,8));
+        ImGui::Image((ImTextureID)this->wifi_texture,ImVec2(24.f,24.f),ImVec2(0.f,0.f),ImVec2(1.f,1.f),iconColor,ImVec4(0,0,0,0));
+
+        SceDateTime ora;
+        memset(&ora, 0, sizeof(SceDateTime));
+        int res = sceRtcGetCurrentClockLocalTime(&ora);
+        std::string t;
+        if(res<0)
+            t = "00:00";
+        else
+            t = fmt::format("{:02}:{:02}", ora.hour, ora.minute);
+
+        ImGui::SetCursorPos(ImVec2((W_SCREEN-ImGui::CalcTextSize(t.c_str()).x)*0.5,8.f));
+        ImGui::Text(t.c_str());
+
+        OmniBook::NightModeON ? SDL_SetTextureColorMod(this->battery_texture,255,255,255) : SDL_SetTextureColorMod(this->battery_texture,0,0,0);
+        ImGui::SetCursorPos(ImVec2(936.f,8.f));
+
+        ImVec2 uv0 = ImVec2(source.x / 70.f, source.y / 24.f);
+        ImVec2 uv1 = ImVec2((source.x + source.w) / 70.f, (source.y + source.h) / 24.f);
+
+        ImGui::Image((ImTextureID)this->battery_texture,ImVec2(14,24),uv0,uv1,iconColor,ImVec4(0,0,0,0));
+
+        ImGui::End();
+
+        style.WindowRounding = 16.f;
+
         ImGui::SetNextWindowPos(ImVec2(W_SCREEN/2, H_SCREEN-(H_bottombar/2)),ImGuiCond_Always,ImVec2(0.5f,0.5f));
         ImGui::SetNextWindowSize(ImVec2(W_SCREEN-100,H_bottombar+30));
 
