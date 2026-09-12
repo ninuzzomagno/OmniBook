@@ -26,6 +26,7 @@ For now **NO ZOOM OR ROTATION SUPPORT**.
 - **L**: to load previous page
 - **R**: to load next page
 - **front touch**: to use widget and scrolling pages like a smartphone
+- **pinch in and pinch out**: zoom
 
 # MEDIA 
 ![Home screen](media/home.jpg)
