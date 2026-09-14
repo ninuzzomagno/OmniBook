@@ -43,6 +43,7 @@ https://github.com/user-attachments/assets/390ee1e3-64b5-4d27-8f2b-8b95d7574576
 - [nlohmann/json](https://github.com/nlohmann/json)
 - 
 # Future update (2.0)
-- rotation and zoom
-- better translation for single word
+- rotation
+- zoom(already implemented in v1.90)
+- better translation for single word( already implemented in v1.90)
 - fix theme
