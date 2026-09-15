@@ -18,6 +18,8 @@ namespace OmniBook{
     int code_exit;
 
     LastBook lb;
+
+    Mix_Music*sound;
 };
 
 int power_callback(int notifyID,int notifyCount, int powerInfo, void*pCommon){
@@ -143,8 +145,27 @@ void OmniBook::init_graphic(){
     ImGui_ImplSDLRenderer2_Init(OmniBook::renderer);
 }
 
+void OmniBook::onMusicFinished(){
+    if(OmniBook::sound){
+        Mix_FreeMusic(OmniBook::sound);
+        OmniBook::sound = nullptr;
+    }
+}
+
+void OmniBook::playSound(){
+    if(Mix_PlayingMusic())
+        Mix_HaltMusic();
+    OmniBook::sound = Mix_LoadMUS("ux0:/data/OMBK00001/temp_speech.mp3");
+    if(OmniBook::sound)
+        Mix_PlayMusic(OmniBook::sound,1);
+}
+
 void OmniBook::init(){
     OmniBook::init_graphic();
+
+    Mix_OpenAudio(44100,MIX_DEFAULT_FORMAT,2,2048);
+    Mix_HookMusicFinished(onMusicFinished);
+    OmniBook::sound = nullptr;
 
     OmniBook::init_net();
 
@@ -174,6 +195,11 @@ void OmniBook::mainloop(){
 }
 
 void OmniBook::cleanup(){
+
+    Mix_HaltMusic();
+    if (OmniBook::sound) Mix_FreeMusic(OmniBook::sound);
+    Mix_CloseAudio();
+
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();

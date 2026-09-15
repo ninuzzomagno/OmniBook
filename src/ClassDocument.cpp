@@ -6,11 +6,14 @@ Document::Document(const char*path){
 
 	LoadingScreen loading(7);
 
+    this->mp3Data = false;
     this->zoommed = false;
 
     this->current_page = 1;
 	this->num_pages = -1;
-    this->def_zoom = 0.f;
+
+    this->fit_mode = 0; // 0 width fit 1 height fit
+
 	this->zoom = 0.f;
 	this->rotation = 0.f;
 	this->scroll_Y = 0;
@@ -109,6 +112,18 @@ void Document::rotate(){
     this->loadPage(this->current_page);
 }
 
+void Document::fitHeight(){
+    this->fit_mode = 1;
+    this->zoommed = true;
+    this->loadPage(this->current_page);
+}
+
+void Document::fitWidth(){
+    this->fit_mode = 0;
+    this->zoommed=true;
+    this->loadPage(this->current_page);
+}
+
 void Document::applyZoom(float z){
     this->zoom *= z;
     this->zoommed=true;
@@ -194,11 +209,13 @@ int Document::loadPage(int page) {
 	fz_page* page_ptr = fz_load_page(this->ctx, this->doc, page);
 	fz_rect rect = fz_bound_page(this->ctx, page_ptr);
 
-	float pageWidthPoints = rect.x1 - rect.x0;
-
-	this->def_zoom = float(W_SCREEN) / pageWidthPoints;
-
-    if(this->zoom == 0.f) this->zoom = this->def_zoom;
+    if(this->fit_mode!=-1){
+        if(this->fit_mode == 0)
+            this->zoom = float(W_SCREEN) / float(rect.x1-rect.x0);
+        else
+            this->zoom = float(H_SCREEN) / float(rect.y1-rect.y0);
+        this->fit_mode=-1;
+    }
 
 	this->ctm = fz_scale(this->zoom, this->zoom);
 	this->ctm = fz_pre_rotate(this->ctm, this->rotation);
@@ -380,10 +397,67 @@ std::string Document::findWord(fz_point& mouse, fz_rect& sel) {
     return "";
 }
 
-std::string Document::sendRequestForTraslation(std::string&data,std::string&from,std::string&to){
-	std::string escapedText = url_encode(data);
+std::string Document::sendRequestForTTS(){
+    std::string url = fmt::format("http://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl={}&q={}",OmniBook::tr.code[OmniBook::tr.idx_from],this->escapedText);
     
-    std::string url = fmt::format("http://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl={}&tl={}&dt=t&dt=bd&q={}", from, to, escapedText);
+    int templateId = sceHttpCreateTemplate("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36", SCE_HTTP_VERSION_1_1, 1);
+	if (templateId < 0) return "Errore: Init Template";
+
+    int connId = sceHttpCreateConnectionWithURL(templateId, url.c_str(), SCE_TRUE);
+    if (connId < 0) {
+        sceHttpDeleteTemplate(templateId);
+        return "Errore: Connessione";
+    }
+
+    int requestId = sceHttpCreateRequestWithURL(connId, SCE_HTTP_METHOD_GET, url.c_str(), 0);
+    if (requestId < 0) {
+        sceHttpDeleteConnection(connId);
+        sceHttpDeleteTemplate(templateId);
+        return "Errore: Richiesta";
+    }
+
+    sceHttpSetAutoRedirect(requestId, 1);
+
+    int res = sceHttpSendRequest(requestId, NULL, 0);
+    if (res < 0) {
+        sceHttpDeleteRequest(requestId);
+        sceHttpDeleteConnection(connId);
+        sceHttpDeleteTemplate(templateId);
+        return "Errore: Invio";
+    }
+
+    // deve essere 200
+    int statusCode = 0;
+    sceHttpGetStatusCode(requestId, &statusCode);
+    if (statusCode != 200) {
+        sceHttpDeleteRequest(requestId);
+        sceHttpDeleteConnection(connId);
+        sceHttpDeleteTemplate(templateId);
+        return fmt::format("Errore HTTP: {}", statusCode);
+    }
+
+    FILE* file_sound = fopen("ux0:/data/OMBK00001/temp_speech.mp3", "wb");
+    unsigned char soundBuffer[4096*2];
+    int readBytes = 0;
+    while ((readBytes = sceHttpReadData(requestId, soundBuffer, sizeof(soundBuffer))) > 0) {
+        fwrite(soundBuffer,1,readBytes,file_sound);
+    }
+    fclose(file_sound);
+
+    sceHttpDeleteRequest(requestId);
+    sceHttpDeleteConnection(connId);
+    sceHttpDeleteTemplate(templateId);
+
+    this->escapedText.clear();
+
+    return "";
+
+}
+
+std::string Document::sendRequestForTraslation(std::string&data){
+	this->escapedText = url_encode(data);
+    
+    std::string url = fmt::format("http://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl={}&tl={}&dt=t&dt=bd&q={}", OmniBook::tr.code[OmniBook::tr.idx_from], OmniBook::tr.code[OmniBook::tr.idx_to], this->escapedText);
 
     std::string response = "";
     
@@ -479,14 +553,16 @@ std::string Document::sendRequestForTraslation(std::string&data,std::string&from
     return "Risposta vuota";
 }
 
-std::string Document::translate(std::string&data,std::string&from,std::string&to){
-	return this->sendRequestForTraslation(data,from,to);
+std::string Document::translate(std::string&data){
+    this->mp3Data=false;
+	return this->sendRequestForTraslation(data);
 }
 
-std::string Document::translate(fz_rect& rect, std::string& from, std::string& to) { 
+std::string Document::translate(fz_rect& rect) { 
+    this->mp3Data=false;
     std::string data = this->findWords(rect);
     if (data.empty()) return "";
 
-    return this->sendRequestForTraslation(data,from,to);
+    return this->sendRequestForTraslation(data);
 }
 

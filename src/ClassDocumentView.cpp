@@ -12,8 +12,13 @@ DocumentView::DocumentView():Screen(){
     this->time_traslataion = 0;
     this->doc = nullptr;
 
+    this->downloadedSound = false;
+
     this->battery_texture = IMG_LoadTexture(OmniBook::renderer,"app0:/res/icons/battery_24.png");
     this->wifi_texture = IMG_LoadTexture(OmniBook::renderer,"app0:/res/icons/wifi_24.png");
+    this->speaker_texture = IMG_LoadTexture(OmniBook::renderer,"app0:/res/icons/speaker_24.png");
+    this->fit_texture = IMG_LoadTexture(OmniBook::renderer,"app0:/res/icons/fit_24.png");
+    this->close_texture = IMG_LoadTexture(OmniBook::renderer,"app0:/res/icons/close_24.png");
 }
 
 void DocumentView::saveData(){
@@ -52,6 +57,8 @@ void DocumentView::loadDocument(const char*path,int my_p = -1){
     this->showSelection = false;
     this->time = 0;
     this->time_traslataion = 0;
+    this->time_heldDown = 0;
+    this->isPinching = false;
 
     this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
     this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
@@ -65,6 +72,8 @@ void DocumentView::update(){
     }
 
     SDL_Event event;
+    ImGuiIO& io = ImGui::GetIO();
+
     while(SDL_PollEvent(&event)){
         ImGui_ImplSDL2_ProcessEvent(&event);
 
@@ -73,8 +82,8 @@ void DocumentView::update(){
             OmniBook::code_exit = 0;
         }
 
-        if(this->showUI){
-            ImGuiIO& io = ImGui::GetIO();
+        if(this->showUI || this->showTraslation){
+            
 
             if(event.type == SDL_FINGERDOWN || event.type == SDL_FINGERMOTION){
                 float mouse_x = event.tfinger.x * W_SCREEN;
@@ -85,13 +94,16 @@ void DocumentView::update(){
             }
             else if (event.type == SDL_FINGERUP){
                 io.AddMouseButtonEvent(0, false);
+                
             }
 
-            if(event.type == SDL_CONTROLLERBUTTONDOWN){
-                switch (event.cbutton.button) {
-                    case SDL_CONTROLLER_BUTTON_BACK:
-                        this->showUI = !this->showUI;
-                        break;
+            if(this->showUI){
+                if(event.type == SDL_CONTROLLERBUTTONDOWN){
+                    switch (event.cbutton.button) {
+                        case SDL_CONTROLLER_BUTTON_BACK:
+                            this->showUI = !this->showUI;
+                            break;
+                    }
                 }
             }
         }
@@ -102,6 +114,7 @@ void DocumentView::update(){
                 this->showSelection=false;
                 this->showTraslation=false;
                 this->doubleTap = false;
+                this->time_heldDown=0;
             }
             else if(event.type == SDL_FINGERDOWN){
                 if(!this->showTraslation && !this->isPinching){
@@ -145,43 +158,34 @@ void DocumentView::update(){
                 }
             } 
             else if(event.type == SDL_FINGERUP){
-                if(this->showTraslation){
-                    this->showSelection = false;
-                    this->showTraslation = false;
-                    this->traslation = "";
+                if(this->doubleTap){
+                    if(SDL_GetTicks() - this->time_traslataion > 2000){
+                        this->showSelection = false;
+                        this->doubleTap = false;
+                        this->traslation = this->doc->translate(this->traslation_rect);
+                        if(this->traslation!="")
+                            this->showTraslation = true;
+                        this->time_traslataion = SDL_GetTicks();
+                    }
+                    else this->traslation = "Errore: attendere 2 secondi";
+                    
+                }
+                else if(this->isPinching){
+                    if(SDL_GetNumTouchFingers(event.tfinger.touchId) < 2){
+                        this->isPinching = false;
+                        this->doc->applyZoom(this->currentZoom);
+                        this->currentZoom = 1.0f;
+                        this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
+                        this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
+                        this->traslation="";
+                    }
                 }
                 else{
-                    if(this->doubleTap){
-                        if(SDL_GetTicks() - this->time_traslataion > 2000){
-                            this->showSelection = false;
-                            this->doubleTap = false;
-                            this->traslation = this->doc->translate(this->traslation_rect,OmniBook::tr.code[OmniBook::tr.idx_from],OmniBook::tr.code[OmniBook::tr.idx_to]);
-                            if(this->traslation!="")
-                                this->showTraslation = true;
-                            this->time_traslataion = SDL_GetTicks();
-                        }
-                        else{
-                            this->traslation = "Errore: attendere 2 secondi";
-                        }
+                    if (this->traslation != ""){
+                        this->traslation = this->doc->translate(this->traslation);
+                        if(!this->traslation.empty())this->showTraslation = true;
                     }
-                    else if(this->isPinching){
-                        if(SDL_GetNumTouchFingers(event.tfinger.touchId) < 2){
-                            this->isPinching = false;
-                            this->doc->applyZoom(this->currentZoom);
-                            this->currentZoom = 1.0f;
-                            this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
-                            this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
-                            this->traslation="";
-                        }
-                    }
-                    else{
-                        if (this->traslation != ""){
-                            this->traslation = this->doc->translate(this->traslation,OmniBook::tr.code[OmniBook::tr.idx_from],OmniBook::tr.code[OmniBook::tr.idx_to]);
-                            if(!this->traslation.empty())
-                                this->showTraslation = true;
-                        }
-                        this->time_heldDown = 0;
-                    }
+                    this->time_heldDown = 0;
                 }
             }
 
@@ -191,22 +195,13 @@ void DocumentView::update(){
                         this->doc->nightToogle();
                         break;
                     case SDL_CONTROLLER_BUTTON_B:
-                        this->saveData();
-                        FileManagerUtils::selected_path_file = "";
-                        OmniBook::currentScreen = SCREEN::FILEMANAGER;
-                        OmniBook::updateTheme();
-                        delete this->doc;
-                        this->doc = nullptr;
+                        this->circle_btn();
                         break;
                     case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: // L
-                        this->currPage = this->doc->loadPreviousPage();
-                        this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
-                        this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
+                        this->left_shoulder();
                         break;
                     case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER://R
-                        this->currPage = this->doc->loadNextPage();
-                        this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
-                        this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
+                        this->right_shoulder();
                         break;
                     case SDL_CONTROLLER_BUTTON_BACK: // SELECT
                         this->showUI = !this->showUI;
@@ -232,6 +227,27 @@ void DocumentView::update(){
     }
 }
 
+void DocumentView::circle_btn(){
+    this->saveData();
+    FileManagerUtils::selected_path_file = "";
+    OmniBook::currentScreen = SCREEN::FILEMANAGER;
+    OmniBook::updateTheme();
+    delete this->doc;
+    this->doc = nullptr;
+}
+
+void DocumentView::left_shoulder(){
+    this->currPage = this->doc->loadPreviousPage();
+    this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
+    this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
+}
+
+void DocumentView::right_shoulder(){
+    this->currPage = this->doc->loadNextPage();
+    this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
+    this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
+}
+
 void DocumentView::render(){
 
     OmniBook::NightModeON ? SDL_SetRenderDrawColor(OmniBook::renderer,0,0,0,255) : SDL_SetRenderDrawColor(OmniBook::renderer,255,255,255,255);
@@ -255,8 +271,8 @@ void DocumentView::displayUI(){
     
     this->displayTraslation();
 
-    this->displayTopBottomBar();        
-
+    this->displayTopBottomBar();      
+    
     ImGui::Render();
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(),OmniBook::renderer);
 }
@@ -305,13 +321,32 @@ void DocumentView::displayTraslation(){
         ImGui::SetNextWindowSize(ImVec2((W_SCREEN-200),0));
 
         ImGui::Begin("##Traduzione",NULL,ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
-        
+
+        ImGui::SameLine(W_SCREEN-280);
+        if(ImGui::ImageButton("##Close",(ImTextureID)this->close_texture,ImVec2(24,24),ImVec2(0,0),ImVec2(1,1))){
+            this->showTraslation=false;
+            this->downloadedSound=false;
+            this->showSelection=false;
+            this->traslation="";
+        }
+
         ImGui::PushFont(OmniBook::my_font);
         ImGui::TextWrapped("%s",this->traslation.c_str());
         ImGui::PopFont();
 
+        const ImVec4 iconColor = OmniBook::NightModeON ? ImVec4(1.f,1.f,1.f,1.f) : ImVec4(0.f,0.f,0.f,1.f);
+        if(ImGui::ImageButton("##TTS",(ImTextureID)this->speaker_texture,ImVec2(24,24),ImVec2(0,0),ImVec2(1,1))){
+            if(!this->downloadedSound){
+                if(this->doc->sendRequestForTTS()=="")this->downloadedSound = true;
+            }
+            if(this->downloadedSound)
+                OmniBook::playSound();
+        }
+
         ImGui::End();
+    
     }
+
 }
 
 void DocumentView::displayTopBottomBar(){
@@ -390,9 +425,6 @@ void DocumentView::displayTopBottomBar(){
         const char*text = fmt::format("{}/{}",this->currPage,this->doc->getTotalPages()).c_str();
         ImGui::SetCursorPos(ImVec2((W_SCREEN-100 - ImGui::CalcTextSize(text).x)/2,12));
         ImGui::Text(text);
-        ImVec2 c = ImGui::GetCursorPos();
-        c = ImVec2(20+c.x,10+c.y);
-        ImGui::SetCursorPos(c);
         ImGui::BeginGroup();
         ImGui::Text("From:");
         ImGui::SameLine();
@@ -408,8 +440,7 @@ void DocumentView::displayTopBottomBar(){
         
         ImGui::EndGroup();
         
-        c = ImVec2((W_SCREEN-100)/2+40,c.y);
-        ImGui::SetCursorPos(c);
+        ImGui::SameLine(350);
         ImGui::BeginGroup();
         ImGui::Text("To:");
         ImGui::SameLine();
@@ -424,6 +455,18 @@ void DocumentView::displayTopBottomBar(){
         }
         
         ImGui::EndGroup();
+        ImGui::SameLine(630);
+        if(ImGui::ImageButton("##FitWidth",ImTextureID(this->fit_texture),ImVec2(48,24),ImVec2(0,0),ImVec2(0.5,1))){
+            this->doc->fitWidth();
+            this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
+            this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
+        }
+        ImGui::SameLine(740);
+        if(ImGui::ImageButton("##FitHeight",ImTextureID(this->fit_texture),ImVec2(48,24),ImVec2(0.5,0),ImVec2(1,1))){
+            this->doc->fitHeight();
+            this->scrollBar_rect_Y = {950,0,10,H_SCREEN*float(H_SCREEN)/float(this->doc->getDocH())};
+            this->scrollBar_rect_X = {0,534,W_SCREEN*float(W_SCREEN)/float(this->doc->getDocW()),10};
+        }
 
         ImGui::End();
     }
@@ -433,4 +476,7 @@ DocumentView::~DocumentView(){
     delete this->doc;
     SDL_DestroyTexture(this->battery_texture);
     SDL_DestroyTexture(this->wifi_texture);
+    SDL_DestroyTexture(this->close_texture);
+    SDL_DestroyTexture(this->fit_texture);
+    SDL_DestroyTexture(this->speaker_texture);
 }
