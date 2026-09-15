@@ -48,3 +48,4 @@ https://github.com/user-attachments/assets/390ee1e3-64b5-4d27-8f2b-8b95d7574576
 - zoom (already implemented in v1.90)
 - better traslation for single word (already implemented in v1.90)
 - fix theme
+- a better file manager
