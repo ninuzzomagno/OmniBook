@@ -9,7 +9,8 @@ std::string FileManagerUtils::GetExt(const std::string&file){
 
 bool FileManagerUtils::isBook(const char*file){
     std::string ext = FileManagerUtils::GetExt(file);
-    if(ext== "CBZ" || ext == "cbz" || ext == "pdf" || ext == "PDF" || ext == "cbt" || ext == "CBT" || ext == "epub" || ext == "EPUB" || ext == "fb2" || ext == "FB2" || ext == "mobi" || ext == "MOBI" || ext == "xps" || ext == "XPS")
+
+    if(ext == "txt" || ext== "TXT" || ext == "CBZ" || ext == "cbz" || ext == "pdf" || ext == "PDF" || ext == "cbt" || ext == "CBT" || ext == "epub" || ext == "EPUB" || ext == "fb2" || ext == "FB2" || ext == "mobi" || ext == "MOBI" || ext == "xps" || ext == "XPS")
         return true;
     return false;
 }

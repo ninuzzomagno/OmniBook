@@ -9,6 +9,10 @@ namespace FileManagerUtils{
 FileManager::FileManager():Screen(){
     FileManagerUtils::current_dir = "ux0:";
     FileManagerUtils::selected_path_file = "";
+    this->swipe = false;
+    this->ini_mouse_x = 0.f;
+    this->ini_mouse_y = 0.f;
+    this->changed_dir = true;
 }
 
 void FileManager::update(){
@@ -18,15 +22,33 @@ void FileManager::update(){
 
         ImGuiIO& io = ImGui::GetIO();
 
-        if(event.type == SDL_FINGERDOWN || event.type == SDL_FINGERMOTION){
-            float mouse_x = event.tfinger.x * W_SCREEN;
-            float mouse_y = event.tfinger.y * H_SCREEN;
+        if(event.type == SDL_FINGERDOWN){
+            this->ini_mouse_x = event.tfinger.x * W_SCREEN;
+            this->ini_mouse_y = event.tfinger.y * H_SCREEN;
             
-            io.AddMousePosEvent(mouse_x, mouse_y);
+            io.AddMousePosEvent(ini_mouse_x, ini_mouse_y);
             io.AddMouseButtonEvent(0, true);
+            
+            this->swipe = false;
+        }
+        else if(event.type == SDL_FINGERMOTION){
+            // float cur_x = event.tfinger.x*W_SCREEN;
+            // float cur_y = event.tfinger.y*H_SCREEN;
+
+            // io.AddMousePosEvent(cur_x,cur_y);
+
+            this->swipe = true;
+            io.AddMouseWheelEvent(0,event.tfinger.dy*25.f);    
         }
         else if (event.type == SDL_FINGERUP){
-            io.AddMouseButtonEvent(0, false);
+            if(!this->swipe){
+                io.AddMouseButtonEvent(0,true);
+                io.AddMouseButtonEvent(0,false);
+            }
+            else
+                io.AddMouseButtonEvent(0, false);
+
+            this->swipe = false;
         }
 
         if(event.type == SDL_CONTROLLERBUTTONDOWN){
@@ -49,13 +71,6 @@ void FileManager::update(){
             }
         }
     }
-
-    if(FileManagerUtils::selected_path_file!=""){
-        OmniBook::currentScreen = SCREEN::DOCVIEW;
-        DocumentView*d = OmniBook::screens[2];
-        d->loadDocument(FileManagerUtils::selected_path_file.c_str());
-        FileManagerUtils::items.clear();
-    }
 }
 
 void FileManager::render(){
@@ -69,8 +84,10 @@ void FileManager::render(){
     ImGui::SetNextWindowPos(ImVec2(W_SCREEN/2, H_SCREEN/2),ImGuiCond_Always,ImVec2(0.5f,0.5f));
     ImGui::SetNextWindowSize(ImVec2(W_SCREEN,H_SCREEN));
 
-    FileManagerUtils::items = FileManagerUtils::GetFileList(FileManagerUtils::current_dir.c_str());
-
+    if(this->changed_dir){
+        FileManagerUtils::items = FileManagerUtils::GetFileList(FileManagerUtils::current_dir.c_str());
+        this->changed_dir = false;
+    }
     ImGui::Begin("Libreria");
 
     for (const auto& item : FileManagerUtils::items) {
@@ -88,15 +105,23 @@ void FileManager::render(){
                         FileManagerUtils::current_dir = FileManagerUtils::current_dir.substr(0,ind);
                     else
                         FileManagerUtils::current_dir = "ux0:";
-                } else {
-                    FileManagerUtils::current_dir += "/" + item.name;
-                }
+                } 
+                else FileManagerUtils::current_dir += "/" + item.name;
+                //this->changed_dir = true;
                 FileManagerUtils::items = FileManagerUtils::GetFileList(FileManagerUtils::current_dir.c_str());
-            } else {
+            } 
+            else {
                 OmniBook::lb.name = item.name;
                 OmniBook::lb.page = -1;
                 FileManagerUtils::selected_path_file = FileManagerUtils::current_dir + "/" + item.name;
                 OmniBook::lb.path = FileManagerUtils::selected_path_file;
+
+                OmniBook::currentScreen = SCREEN::DOCVIEW;
+                DocumentView*d = OmniBook::screens[2];
+                d->loadDocument(FileManagerUtils::selected_path_file.c_str());
+                FileManagerUtils::items.clear();
+
+                this->changed_dir=true;
             }
         }
 

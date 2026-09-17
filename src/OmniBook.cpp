@@ -133,13 +133,29 @@ void OmniBook::init_graphic(){
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
+    OmniBook::code_exit = 0;
+
     ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
     ImFontConfig config;
     config.FontDataOwnedByAtlas = true;
     config.RasterizerMultiply = 1.2f;
 
-    OmniBook::code_exit = 0;
-    OmniBook::my_font = io.Fonts->AddFontFromFileTTF("app0:/res/font/DroidSans.ttf",30.f,&config,io.Fonts->GetGlyphRangesDefault());
+    // SceAppUtilInitParam initP;
+    // SceAppUtilBootParam bootP;
+    // memset(&initP,0,sizeof(SceAppUtilInitParam));
+    // memset(&bootP,0,sizeof(SceAppUtilBootParam));
+
+    // sceAppUtilInit(&initP,&bootP);
+
+    // int language = -1;
+    // sceAppUtilSystemParamGetInt(SCE_SYSTEM_PARAM_ID_LANG,&language);
+
+    //if(language == SCE_SYSTEM_PARAM_LANG_JAPANESE)
+        OmniBook::my_font = io.Fonts->AddFontFromFileTTF("app0:/res/font/NotoSansJP-Regular.ttf",30.f,&config,io.Fonts->GetGlyphRangesDefault());
+    // else
+    //     OmniBook::my_font = io.Fonts->AddFontFromFileTTF("app0:/res/font/DroidSans.ttf",30.f,&config,io.Fonts->GetGlyphRangesDefault());
 
     ImGui_ImplSDL2_InitForSDLRenderer(OmniBook::window,OmniBook::renderer);
     ImGui_ImplSDLRenderer2_Init(OmniBook::renderer);

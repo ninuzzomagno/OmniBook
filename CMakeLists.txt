@@ -13,7 +13,7 @@ include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "OmniBook")
 set(VITA_TITLEID "OMBK00001") # TitleID a 9 caratteri
-set(VITA_VERSION "01.95")
+set(VITA_VERSION "01.96")
 
 add_definitions(-DFMT_HEADER_ONLY)
 add_definitions(-DAPP_VERSION="${VITA_VERSION}")
@@ -124,7 +124,7 @@ vita_create_vpk(${PROJECT_NAME}.vpk ${VITA_TITLEID} eboot.bin
 
     FILE res/texture/logo_home.png res/texture/logo_home.png
 
-    FILE res/font/DroidSans.ttf res/font/DroidSans.ttf
+    FILE res/font/NotoSansJP-Regular.ttf res/font/NotoSansJP-Regular.ttf
 
     FILE res/icons/wifi_24.png res/icons/wifi_24.png
     FILE res/icons/battery_24.png res/icons/battery_24.png

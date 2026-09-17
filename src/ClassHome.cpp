@@ -107,7 +107,7 @@ void Home::render(){
             ImGui::BeginChild("#About",ImVec2(W_SCREEN*0.6,200));
             ImGui::SetNextItemWidth(W_SCREEN*0.5);
             ImGui::SetCursorPos(ImVec2(45,15));
-            ImGui::TextWrapped("Omnibook was created by ninuzzomagno.\n\nGithub: https://github.com/ninuzzomagno/\n\nv1.95");
+            ImGui::TextWrapped("Omnibook was created by ninuzzomagno.\n\nGithub: https://github.com/ninuzzomagno/\n\nv1.96");
             ImGui::EndChild();
             ImGui::PopStyleColor();
         }

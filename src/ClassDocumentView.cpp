@@ -343,6 +343,11 @@ void DocumentView::displayTraslation(){
                 OmniBook::playSound();
         }
 
+        ImGui::SameLine();
+        if(ImGui::Button("Original",ImVec2(100,40))){
+            
+        }
+
         ImGui::End();
     
     }
@@ -430,7 +435,7 @@ void DocumentView::displayTopBottomBar(){
         ImGui::SameLine();
         ImGui::SetNextItemWidth(200);
         if(ImGui::BeginCombo("##Lang from",OmniBook::tr.lang[OmniBook::tr.idx_from].c_str(),ImGuiComboFlags_None)){
-            for(int n=0;n<5;n++){
+            for(int n=0;n<7;n++){
                 const bool is_selected = (n == OmniBook::tr.idx_from);
                 if(ImGui::Selectable(OmniBook::tr.lang[n].c_str(),is_selected))
                     OmniBook::tr.idx_from = n;
@@ -446,7 +451,7 @@ void DocumentView::displayTopBottomBar(){
         ImGui::SameLine();
         ImGui::SetNextItemWidth(200);
         if(ImGui::BeginCombo("##Lang to",OmniBook::tr.lang[OmniBook::tr.idx_to].c_str(),ImGuiComboFlags_None)){
-            for(int n=0;n<5;n++){
+            for(int n=0;n<7;n++){
                 const bool is_selected = (n == OmniBook::tr.idx_to);
                 if(ImGui::Selectable(OmniBook::tr.lang[n].c_str(),is_selected))
                     OmniBook::tr.idx_to = n;
