@@ -15,7 +15,7 @@ OmniBook is an app for PSVITA written in C++. It uses the main following librari
 If you want to build this app from source code, you need to extract the libmupdf.a from its tz archive. 
 
 ### Features
-The **translation support** is acheived through *SceHttp* and *Google translate*. You can translate a single word or the whole page. Supported languages are: Italian, English, Spanish, French and German.
+The **translation support** is acheived through *SceHttp* and *Google translate*. You can translate a single word or the whole page. Supported languages are: Italian, English, Spanish, French and German, Japanese and Chinese.
 You can use the google traslate tts to read sentences/words.
 Everything in this app works by front touch.
 There is a **night mode** and an **automatic save** of your reading progress.
@@ -45,7 +45,7 @@ https://github.com/user-attachments/assets/390ee1e3-64b5-4d27-8f2b-8b95d7574576
 - 
 # Future update (2.0)
 - rotation
-- tts from google traslate
+- tts from google traslate (already implemented in v1.95)
 - zoom (already implemented in v1.90)
 - better traslation for single word (already implemented in v1.90)
 - fix theme
